@@ -1,0 +1,136 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <ctime>
+
+using namespace std;
+
+class Customer {
+public:
+    string name;
+    string address;
+    string phone;
+    int customerId;
+
+    Customer(string name, string address, string phone, int id)
+        : name(name), address(address), phone(phone), customerId(id) {}
+};
+
+class Transaction {
+public:
+    string type;
+    double amount;
+    time_t date;
+
+    Transaction(string type, double amount) : type(type), amount(amount) {
+        date = time(nullptr);
+    }
+};
+
+class Account {
+private:
+    int accountId;
+    double balance;
+    vector<Transaction> transactions;
+public:
+    Customer customer;
+
+    Account(int id, Customer cust) : accountId(id), customer(cust), balance(0) {}
+
+    void deposit(double amount) {
+        balance += amount;
+        transactions.push_back(Transaction("Deposit", amount));
+        cout << "Deposit successful. New balance: $" << balance << endl;
+    }
+
+    void withdraw(double amount) {
+        if (amount > balance) {
+            cout << "Insufficient funds." << endl;
+            return;
+        }
+        balance -= amount;
+        transactions.push_back(Transaction("Withdrawal", amount));
+        cout << "Withdrawal successful. New balance: $" << balance << endl;
+    }
+
+    void transfer(Account &toAccount, double amount) {
+        if (amount > balance) {
+            cout << "Insufficient funds." << endl;
+            return;
+        }
+        balance -= amount;
+        toAccount.deposit(amount);
+        transactions.push_back(Transaction("Transfer", amount));
+        cout << "Transfer successful. New balance: $" << balance << endl;
+    }
+
+    void viewAccountInfo() {
+        cout << "Account ID: " << accountId << endl;
+        cout << "Customer Name: " << customer.name << endl;
+        cout << "Balance: $" << balance << endl;
+        cout << "Recent Transactions: " << endl;
+        for (const auto& t : transactions) {
+            cout << "Type: " << t.type << ", Amount: $" << t.amount << ", Date: " << ctime(&t.date);
+        }
+    }
+};
+
+class BankingService {
+private:
+    vector<Customer> customers;
+    vector<Account> accounts;
+    int nextCustomerId = 1;
+    int nextAccountId = 1;
+public:
+    Customer createCustomer(string name, string address, string phone) {
+        Customer customer(name, address, phone, nextCustomerId++);
+        customers.push_back(customer);
+        return customer;
+    }
+
+    Account createAccount(Customer customer) {
+        Account account(nextAccountId++, customer);
+        accounts.push_back(account);
+        return account;
+    }
+
+    Account* getAccountById(int accountId) {
+        for (auto &account : accounts) {
+            if (account.accountId == accountId) {
+                return &account;
+            }
+        }
+        return nullptr;
+    }
+
+    void viewAllCustomers() {
+        for (const auto &customer : customers) {
+            cout << "Customer ID: " << customer.customerId << ", Name: " << customer.name << endl;
+        }
+    }
+};
+
+int main() {
+    BankingService bank;
+
+    Customer customer1 = bank.createCustomer("Alice", "123 Maple St", "555-1234");
+    Customer customer2 = bank.createCustomer("Bob", "456 Oak St", "555-5678");
+
+    Account account1 = bank.createAccount(customer1);
+    Account account2 = bank.createAccount(customer2);
+
+    account1.deposit(500);
+    account1.withdraw(100);
+    account1.transfer(account2, 200);
+
+    cout << "\nCustomer 1 Account Info:" << endl;
+    account1.viewAccountInfo();
+
+    cout << "\nCustomer 2 Account Info:" << endl;
+    account2.viewAccountInfo();
+
+    cout << "\nAll Customers:" << endl;
+    bank.viewAllCustomers();
+
+    return 0;
+}
